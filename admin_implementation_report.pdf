@@ -1,0 +1,47 @@
+# CampusPulse Admin Implementation Report
+
+The Admin dashboard has been fully fleshed out with working sub-pages, safe APIs, and proper authorization constraints.
+
+## 1. Pages Created
+The following new React components were created and wired into `App.tsx` following the existing styling (cards, tables, Lucide icons, responsive modals):
+- `AdminUsers.tsx` (`/admin/users`)
+- `AdminDepartments.tsx` (`/admin/departments`)
+- `AdminSubjects.tsx` (`/admin/subjects`)
+- `AdminClasses.tsx` (`/admin/classes`)
+- `AdminAnnouncements.tsx` (`/admin/announcements`)
+
+## 2. APIs Reused vs Added
+**Reused:**
+- `GET /departments`, `GET /subjects`, `GET /announcements`, `GET /faculties` (for dropdowns)
+
+**Added (Admin Only):**
+- **Users**: `GET /admin/users` (dynamically resolves names and departments from Student/Faculty profiles), `PATCH /admin/users/{user_id}/status`
+- **Departments**: `POST /departments`, `PUT /departments/{id}`, `DELETE /departments/{id}` (protected by active student constraint)
+- **Subjects**: `POST /subjects`, `PUT /subjects/{id}`, `DELETE /subjects/{id}`
+- **Announcements**: `POST /announcements`, `PUT /announcements/{id}`, `DELETE /announcements/{id}`
+- **Classes**: `GET /admin/classes` (dynamically groups active students by Department, Year, and Semester — avoiding the need for a duplicate model/table).
+
+## 3. Database Models Reused
+- **No SQLite reset** or destruction of data was performed.
+- Existing models (`User`, `Department`, `Subject`, `Announcement`, `Student`) were fully reused without creating duplicate tables.
+
+## 4. Admin Authorization Verified
+- Every single new backend endpoint checks `current_user.role != "ADMIN"`.
+- If a Student or Faculty attempts to make POST/PUT/DELETE calls to these endpoints, the server returns a secure `403 Not authorized` response.
+- Frontend routes are shielded by the existing `ProtectedRoute` logic with `allowedRoles={['ADMIN']}`.
+
+## 5. CRUD Operations Implemented
+- **Users**: Read, toggle active status (deactivate).
+- **Departments**: Full Create, Read, Update, Delete (Safe delete constraint added).
+- **Subjects**: Full Create, Read, Update, Delete.
+- **Classes**: Read-only (Derived dynamically from active student enrollments per requirements).
+- **Announcements**: Full Create, Read, Update, Delete.
+
+## 6. Regression Testing
+- Ran frontend TypeScript build checks (`tsc --noEmit`) to verify no missing imports, type errors, or broken route declarations.
+- Re-loaded the Backend router to ensure no cyclical imports or missing references.
+- Verified that previously fixed API endpoints for Student/Faculty functionality remain fully intact and operational.
+
+## Remaining Limitations
+- **Deleting constraints**: Currently, deleting a Department prevents deletion if there are active students. It does not check for active Subjects/Faculty for brevity, though deleting those would cascade safely in the DB.
+- **Class Management**: Assigning faculty to an entire "Class" is inherently tricky when Classes are dynamically grouped by semester, so faculty assignment remains managed at the `Subject` level (which is how the DB is currently architected).
